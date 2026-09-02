@@ -7,6 +7,7 @@ import { UsersModule } from './modules/users/users.module';
 import { PeopleModule } from './modules/people/people.module';
 import { GroupsModule } from './modules/groups/groups.module';
 import { TripsModule } from './modules/trips/trips.module';
+import { ExpensesModule } from './modules/expenses/expenses.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -22,6 +23,7 @@ import appConfig from './config/app.config';
     PeopleModule,
     GroupsModule,
     TripsModule,
+    ExpensesModule,
   ],
 })
 export class AppModule {}

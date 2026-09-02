@@ -112,7 +112,7 @@ export class PeopleService {
 
   private present(u: {
     id: string;
-    phone: string;
+    phone: string | null;
     firstName: string;
     lastName: string | null;
     profilePicture: string | null;

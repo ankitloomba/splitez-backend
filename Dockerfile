@@ -21,4 +21,4 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/prisma ./prisma
 EXPOSE 3000
 # Apply migrations on boot, then start the API
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate resolve --applied 0005_step6_activity_finances_notifications && npx prisma migrate deploy && node dist/main.js"]

@@ -8,6 +8,8 @@ import { PeopleModule } from './modules/people/people.module';
 import { GroupsModule } from './modules/groups/groups.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
+import { BalancesModule } from './modules/balances/balances.module';
+import { SettlementsModule } from './modules/settlements/settlements.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -24,6 +26,8 @@ import appConfig from './config/app.config';
     GroupsModule,
     TripsModule,
     ExpensesModule,
+    BalancesModule,
+    SettlementsModule,
   ],
 })
 export class AppModule {}

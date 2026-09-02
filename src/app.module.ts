@@ -15,6 +15,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { FinancesModule } from './modules/finances/finances.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { PromosModule } from './modules/promos/promos.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -38,6 +40,8 @@ import appConfig from './config/app.config';
     FinancesModule,
     CategoriesModule,
     PromosModule,
+    AdminModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}

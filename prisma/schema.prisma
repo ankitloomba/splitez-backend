@@ -351,3 +351,26 @@ model PromotionalBanner {
 
   @@map("promotional_banners")
 }
+
+// Dashboard elements — flexible CMS blocks rendered by the apps
+model DashboardElement {
+  id           String   @id @default(uuid()) @db.Uuid
+  type         String   // greeting | banner | card | announcement | tip | spotlight
+  title        String?
+  subtitle     String?
+  body         String?  // rich text / markdown
+  image        String?
+  cta          String?  // call-to-action button text
+  destination  String?  // deep-link or URL
+  targetScreen String   @default("home")
+  position     Int      @default(0) // ordering weight
+  config       Json     @default("{}") // flexible key-value (colors, icon, style)
+  startDate    DateTime @default(now())
+  endDate      DateTime?
+  status       String   @default("Draft") // Draft | Active | Inactive
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([targetScreen, status])
+  @@map("dashboard_elements")
+}

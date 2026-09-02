@@ -17,11 +17,17 @@ datasource db {
 
 model User {
   id             String   @id @default(uuid()) @db.Uuid
-  phone          String   @unique
+  phone          String?  @unique
   countryCode    String   @default("+91")
   firstName      String
   lastName       String?
-  email          String?
+  email          String?  @unique
+  passwordHash   String?
+  emailVerified  Boolean  @default(false)
+  emailVerifyToken   String?  @unique
+  emailVerifyExpiry  DateTime?
+  passwordResetToken  String?  @unique
+  passwordResetExpiry DateTime?
   profilePicture String?
   currency       String   @default("INR")
   isVerified     Boolean  @default(false)

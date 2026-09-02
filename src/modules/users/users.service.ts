@@ -73,7 +73,7 @@ export class UsersService {
 
   private present(user: {
     id: string;
-    phone: string;
+    phone: string | null;
     firstName: string;
     lastName: string | null;
     email: string | null;

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
-import { TrackEventDto, TrackBatchDto } from './dto/analytics.dto';
+import { TrackEventDto, TrackBatchDto, RegisterInstallDto } from './dto/analytics.dto';
 
 @ApiTags('Analytics')
 @Controller('analytics')
@@ -82,5 +82,20 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Platform breakdown (iOS/Android/Web)' })
   getPlatformBreakdown(@Query('days') days?: string) {
     return this.analytics.getPlatformBreakdown(days ? parseInt(days, 10) : 30);
+  }
+
+  // ── App Installs ─────────────────────────────────────────────────────
+
+  @Post('installs')
+  @ApiOperation({ summary: 'Register or update an app install' })
+  registerInstall(@Req() req: any, @Body() dto: RegisterInstallDto) {
+    const userId = req.user?.sub ?? undefined;
+    return this.analytics.registerInstall(dto, userId);
+  }
+
+  @Get('installs')
+  @ApiOperation({ summary: 'Install stats: total, active, by platform, daily' })
+  getInstallStats() {
+    return this.analytics.getInstallStats();
   }
 }

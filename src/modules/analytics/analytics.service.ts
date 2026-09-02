@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { TrackEventDto } from './dto/analytics.dto';
-import { Prisma } from '@prisma/client';
+import { TrackEventDto, RegisterInstallDto } from './dto/analytics.dto';
 
 @Injectable()
 export class AnalyticsService {
@@ -210,5 +209,62 @@ export class AnalyticsService {
     `;
 
     return rows.map((r) => ({ platform: r.platform, users: Number(r.users) }));
+  }
+
+  // ── App Installs ─────────────────────────────────────────────────────
+
+  /** Register or update an app install (called on every app launch). */
+  async registerInstall(dto: RegisterInstallDto, userId?: string) {
+    return this.prisma.appInstall.upsert({
+      where: { installId: dto.installId },
+      update: {
+        lastSeen: new Date(),
+        appVersion: dto.appVersion,
+        osVersion: dto.osVersion,
+        ...(userId ? { userId } : {}),
+        uninstalled: false,
+      },
+      create: {
+        installId: dto.installId,
+        platform: dto.platform,
+        appVersion: dto.appVersion,
+        osVersion: dto.osVersion,
+        deviceModel: dto.deviceModel,
+        userId: userId ?? null,
+      },
+    });
+  }
+
+  /** Total installs, active installs, and installs over time. */
+  async getInstallStats() {
+    const [total, active, byPlatform, overTime] = await Promise.all([
+      this.prisma.appInstall.count(),
+      this.prisma.appInstall.count({
+        where: {
+          lastSeen: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+          uninstalled: false,
+        },
+      }),
+      this.prisma.$queryRaw<Array<{ platform: string; count: bigint }>>`
+        SELECT "platform", COUNT(*) AS count
+        FROM app_installs
+        WHERE "uninstalled" = false
+        GROUP BY "platform"
+      `,
+      this.prisma.$queryRaw<Array<{ day: string; installs: bigint }>>`
+        SELECT DATE("firstSeen") AS day, COUNT(*) AS installs
+        FROM app_installs
+        WHERE "firstSeen" >= NOW() - INTERVAL '30 days'
+        GROUP BY DATE("firstSeen")
+        ORDER BY day
+      `,
+    ]);
+
+    return {
+      total,
+      activeInstalls: active,
+      byPlatform: byPlatform.map((r) => ({ platform: r.platform, count: Number(r.count) })),
+      dailyInstalls: overTime.map((r) => ({ day: r.day, installs: Number(r.installs) })),
+    };
   }
 }

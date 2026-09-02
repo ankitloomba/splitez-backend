@@ -414,3 +414,45 @@ model ServiceHealthLog {
   @@index([createdAt])
   @@map("service_health_logs")
 }
+
+// Unique app installs — one row per device, survives re-installs via installId
+model AppInstall {
+  id          String   @id @default(uuid()) @db.Uuid
+  installId   String   @unique // client-generated persistent UUID
+  platform    String   // ios | android
+  appVersion  String?
+  osVersion   String?
+  deviceModel String?
+  userId      String?  @db.Uuid // linked after login, nullable
+  firstSeen   DateTime @default(now())
+  lastSeen    DateTime @default(now())
+  uninstalled Boolean  @default(false)
+
+  @@index([platform])
+  @@index([firstSeen])
+  @@index([lastSeen])
+  @@map("app_installs")
+}
+
+// ---------------------------------------------------------------------------
+// Ad Placements — server-driven ad configuration
+// ---------------------------------------------------------------------------
+
+model AdPlacement {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique // e.g. "home_banner", "expense_list_native", "settings_banner"
+  adType       String   // banner | interstitial | native | rewarded
+  platform     String   @default("all") // ios | android | all
+  screen       String   // which screen to show on
+  position     String   @default("bottom") // top | bottom | inline | after_item
+  adUnitIos    String?  // AdMob unit ID for iOS
+  adUnitAndroid String? // AdMob unit ID for Android
+  enabled      Boolean  @default(true)
+  frequency    Int      @default(1) // show every N visits / items
+  adFreeSkip   Boolean  @default(true) // skip for ad-free users
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([screen, enabled])
+  @@map("ad_placements")
+}

@@ -38,6 +38,31 @@ export class TrackEventDto {
   appVersion?: string;
 }
 
+export class RegisterInstallDto {
+  @ApiProperty({ description: 'Persistent install UUID generated on first launch' })
+  @IsString()
+  installId!: string;
+
+  @ApiProperty({ example: 'ios' })
+  @IsString()
+  platform!: string;
+
+  @ApiPropertyOptional({ example: '1.0.0' })
+  @IsOptional()
+  @IsString()
+  appVersion?: string;
+
+  @ApiPropertyOptional({ example: '17.0' })
+  @IsOptional()
+  @IsString()
+  osVersion?: string;
+
+  @ApiPropertyOptional({ example: 'iPhone 15 Pro' })
+  @IsOptional()
+  @IsString()
+  deviceModel?: string;
+}
+
 export class TrackBatchDto {
   @ApiProperty({ type: [TrackEventDto] })
   @IsArray()

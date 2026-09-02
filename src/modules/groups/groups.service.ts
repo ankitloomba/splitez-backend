@@ -4,12 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { initialAvatar } from '../../common/utils/avatar.util';
 import { AddMembersDto, CreateGroupDto, UpdateGroupDto } from './dto/groups.dto';
 
 @Injectable()
 export class GroupsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async list(userId: string) {
     const groups = await this.prisma.group.findMany({
@@ -38,6 +42,24 @@ export class GroupsService {
       },
       include: { members: { include: { user: true } } },
     });
+
+    // Notify other members they were added to the new group
+    const otherMembers = memberIds.filter((id) => id !== userId);
+    if (otherMembers.length > 0) {
+      const creator = await this.prisma.user.findUnique({ where: { id: userId } });
+      const creatorName = creator?.firstName ?? 'Someone';
+
+      this.notifications
+        .sendToMany(
+          otherMembers,
+          'New Group',
+          `${creatorName} added you to "${group.name}"`,
+          'GROUP_CREATED',
+          { groupId: group.id },
+        )
+        .catch(() => {});
+    }
+
     return this.present(group);
   }
 
@@ -68,6 +90,23 @@ export class GroupsService {
       data: dto.memberIds.map((id) => ({ groupId, userId: id })),
       skipDuplicates: true,
     });
+
+    // Notify added members
+    const adder = await this.prisma.user.findUnique({ where: { id: userId } });
+    const group = await this.prisma.group.findUnique({ where: { id: groupId } });
+    const adderName = adder?.firstName ?? 'Someone';
+    const groupName = group?.name ?? 'a group';
+
+    this.notifications
+      .sendToMany(
+        dto.memberIds.filter((id) => id !== userId),
+        'Added to Group',
+        `${adderName} added you to "${groupName}"`,
+        'GROUP_MEMBER_ADDED',
+        { groupId },
+      )
+      .catch(() => {});
+
     return this.get(userId, groupId);
   }
 

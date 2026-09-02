@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PushService } from './push.service';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly push: PushService,
+  ) {}
 
-  /** Send a notification to a user (called internally). */
+  /** Send a notification to a user (creates DB record + sends push). */
   async send(
     userId: string,
     title: string,
@@ -13,9 +17,37 @@ export class NotificationsService {
     type: string,
     data?: Record<string, unknown>,
   ) {
-    return this.prisma.notification.create({
+    const notification = await this.prisma.notification.create({
       data: { userId, title, body, type, data: (data ?? {}) as any },
     });
+
+    // Fire push notification in background (don't await to avoid slowing the request)
+    const pushData: Record<string, string> = {
+      type,
+      notificationId: notification.id,
+    };
+    if (data) {
+      for (const [k, v] of Object.entries(data)) {
+        if (typeof v === 'string') pushData[k] = v;
+        else pushData[k] = JSON.stringify(v);
+      }
+    }
+    this.push.sendToUser(userId, title, body, pushData).catch(() => {});
+
+    return notification;
+  }
+
+  /** Send a notification to multiple users. */
+  async sendToMany(
+    userIds: string[],
+    title: string,
+    body: string,
+    type: string,
+    data?: Record<string, unknown>,
+  ) {
+    await Promise.allSettled(
+      userIds.map((id) => this.send(id, title, body, type, data)),
+    );
   }
 
   /** List notifications for the current user. */

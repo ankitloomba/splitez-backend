@@ -4,12 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { initialAvatar } from '../../common/utils/avatar.util';
 import { CreateSettlementDto } from './dto/settlements.dto';
 
 @Injectable()
 export class SettlementsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async list(userId: string, groupId?: string) {
     const settlements = await this.prisma.settlement.findMany({
@@ -46,6 +50,20 @@ export class SettlementsService {
       },
       include: { from: true, to: true },
     });
+
+    // Notify the recipient that they received a payment
+    const senderName = settlement.from?.firstName ?? 'Someone';
+    const amount = (settlement.amount / 100).toFixed(2);
+
+    this.notifications
+      .send(
+        dto.toId,
+        'Payment Received',
+        `${senderName} paid you ₹${amount}`,
+        'SETTLEMENT_COMPLETED',
+        { settlementId: settlement.id, groupId: dto.groupId ?? undefined },
+      )
+      .catch(() => {});
 
     return this.present(settlement);
   }

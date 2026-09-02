@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { initialAvatar } from '../../common/utils/avatar.util';
 import { computeSplits } from './split-engine';
 import { CreateExpenseDto, UpdateExpenseDto } from './dto/expenses.dto';
@@ -20,7 +21,10 @@ const EXPENSE_INCLUDE = {
 
 @Injectable()
 export class ExpensesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   // -------------------------------------------------------------------------
   // List
@@ -108,6 +112,28 @@ export class ExpensesService {
       },
       include: EXPENSE_INCLUDE,
     });
+
+    // Notify all split participants (except the creator)
+    const splitUserIds = expense.splits
+      .map((s: any) => s.userId)
+      .filter((id: string) => id !== userId);
+
+    if (splitUserIds.length > 0) {
+      const creator = expense.createdBy;
+      const creatorName = creator?.firstName ?? 'Someone';
+      const amount = (expense.amount / 100).toFixed(2);
+      const groupName = expense.group?.name;
+
+      this.notifications
+        .sendToMany(
+          splitUserIds,
+          'New Expense',
+          `${creatorName} added "${expense.description}" for ₹${amount}${groupName ? ` in ${groupName}` : ''}`,
+          'EXPENSE_CREATED',
+          { expenseId: expense.id, groupId: expense.groupId ?? undefined },
+        )
+        .catch(() => {});
+    }
 
     return this.present(expense);
   }

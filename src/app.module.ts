@@ -17,6 +17,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { PromosModule } from './modules/promos/promos.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -42,6 +43,7 @@ import appConfig from './config/app.config';
     PromosModule,
     AdminModule,
     DashboardModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

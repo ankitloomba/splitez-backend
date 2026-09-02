@@ -374,3 +374,43 @@ model DashboardElement {
   @@index([targetScreen, status])
   @@map("dashboard_elements")
 }
+
+// ---------------------------------------------------------------------------
+// Analytics — event tracking, DAU/MAU, user journeys, service health
+// ---------------------------------------------------------------------------
+
+model AnalyticsEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @db.Uuid
+  sessionId  String?  // client-generated session ID
+  event      String   // app_open, screen_view, action, session_end
+  screen     String?  // home, groups, trips, finances, settings …
+  action     String?  // tap_create_expense, tap_settle, etc.
+  metadata   Json     @default("{}")
+  platform   String?  // ios, android, web
+  appVersion String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([event])
+  @@index([createdAt])
+  @@index([sessionId])
+  @@map("analytics_events")
+}
+
+model ServiceHealthLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  endpoint   String
+  method     String   @default("GET")
+  statusCode Int
+  duration   Int      // ms
+  error      String?
+  userAgent  String?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([endpoint, createdAt])
+  @@index([statusCode])
+  @@index([createdAt])
+  @@map("service_health_logs")
+}

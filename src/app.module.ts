@@ -10,6 +10,11 @@ import { TripsModule } from './modules/trips/trips.module';
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { BalancesModule } from './modules/balances/balances.module';
 import { SettlementsModule } from './modules/settlements/settlements.module';
+import { ActivityModule } from './modules/activity/activity.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { FinancesModule } from './modules/finances/finances.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { PromosModule } from './modules/promos/promos.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -28,6 +33,11 @@ import appConfig from './config/app.config';
     ExpensesModule,
     BalancesModule,
     SettlementsModule,
+    ActivityModule,
+    NotificationsModule,
+    FinancesModule,
+    CategoriesModule,
+    PromosModule,
   ],
 })
 export class AppModule {}

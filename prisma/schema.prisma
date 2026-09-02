@@ -1,0 +1,346 @@
+// SplitEZ / Splitezy — data model
+// Source of truth: Product Project Blueprint V0.2 §30 (Initial Data Model / Entities)
+// The backend is the source of truth for all financial calculations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Identity & Users
+// ---------------------------------------------------------------------------
+
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  phone          String   @unique
+  countryCode    String   @default("+91")
+  firstName      String
+  lastName       String?
+  email          String?
+  profilePicture String?
+  currency       String   @default("INR")
+  isVerified     Boolean  @default(false)
+  adFree         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  preferences        UserPreferences?
+  groupMemberships   GroupMember[]
+  tripMemberships    TripMember[]
+  relationshipsFrom  Relationship[]   @relation("RelationshipOwner")
+  relationshipsTo    Relationship[]   @relation("RelationshipPeer")
+  expensesCreated    Expense[]        @relation("ExpenseCreatedBy")
+  expensesPaid       Expense[]        @relation("ExpensePaidBy")
+  expenseSplits      ExpenseSplit[]
+  settlementsFrom    Settlement[]     @relation("SettlementFrom")
+  settlementsTo      Settlement[]     @relation("SettlementTo")
+  income             Income[]
+  personalExpenses   PersonalExpense[]
+  activities         Activity[]
+  notifications      Notification[]
+  deviceTokens       DeviceToken[]
+
+  @@map("users")
+}
+
+model UserPreferences {
+  id                    String   @id @default(uuid()) @db.Uuid
+  userId                String   @unique @db.Uuid
+  navigationOrder       Json     @default("[\"home\",\"groups\",\"trips\",\"finances\",\"more\"]")
+  notificationSettings  Json     @default("{}")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
+
+// ---------------------------------------------------------------------------
+// People & Relationships
+// ---------------------------------------------------------------------------
+
+model Relationship {
+  id        String   @id @default(uuid()) @db.Uuid
+  ownerId   String   @db.Uuid
+  peerId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  owner User @relation("RelationshipOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  peer  User @relation("RelationshipPeer", fields: [peerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, peerId])
+  @@map("relationships")
+}
+
+// ---------------------------------------------------------------------------
+// Groups & Trips (shared expense spaces)
+// ---------------------------------------------------------------------------
+
+model Group {
+  id          String        @id @default(uuid()) @db.Uuid
+  name        String
+  image       String?
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  members  GroupMember[]
+  expenses Expense[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String   @id @default(uuid()) @db.Uuid
+  groupId  String   @db.Uuid
+  userId   String   @db.Uuid
+  role     String   @default("member") // member | admin
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+model Trip {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String
+  destination String?
+  startDate   DateTime?
+  endDate     DateTime?
+  image       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  members  TripMember[]
+  expenses Expense[]
+
+  @@map("trips")
+}
+
+model TripMember {
+  id       String   @id @default(uuid()) @db.Uuid
+  tripId   String   @db.Uuid
+  userId   String   @db.Uuid
+  joinedAt DateTime @default(now())
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, userId])
+  @@map("trip_members")
+}
+
+// ---------------------------------------------------------------------------
+// Expenses & Split engine
+// Amounts stored in integer minor units (e.g. paise) to avoid float rounding.
+// ---------------------------------------------------------------------------
+
+enum SplitMethod {
+  EQUAL
+  EXACT
+  PERCENTAGE
+}
+
+model Expense {
+  id          String      @id @default(uuid()) @db.Uuid
+  description String
+  amount      Int // minor units (paise/cents)
+  currency    String      @default("INR")
+  splitMethod SplitMethod @default(EQUAL)
+  category    String?
+  note        String?
+  receipt     String?
+  date        DateTime    @default(now())
+
+  createdById String  @db.Uuid
+  paidById    String  @db.Uuid
+  groupId     String? @db.Uuid
+  tripId      String? @db.Uuid
+
+  // Idempotency key for duplicate-submission protection (§29)
+  idempotencyKey String? @unique
+
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy User           @relation("ExpenseCreatedBy", fields: [createdById], references: [id])
+  paidBy    User           @relation("ExpensePaidBy", fields: [paidById], references: [id])
+  group     Group?         @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  trip      Trip?          @relation(fields: [tripId], references: [id], onDelete: SetNull)
+  splits    ExpenseSplit[]
+
+  @@index([groupId])
+  @@index([tripId])
+  @@map("expenses")
+}
+
+model ExpenseSplit {
+  id        String @id @default(uuid()) @db.Uuid
+  expenseId String @db.Uuid
+  userId    String @db.Uuid
+  // Owed share of the expense in minor units. Sum of shares == expense.amount.
+  shareAmount Int
+  // Original percentage (when PERCENTAGE) for auditability, basis points (10000 = 100%)
+  percentageBps Int?
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([expenseId, userId])
+  @@map("expense_splits")
+}
+
+// ---------------------------------------------------------------------------
+// Settlements
+// ---------------------------------------------------------------------------
+
+enum SettlementStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  COMPLETED
+}
+
+model Settlement {
+  id        String           @id @default(uuid()) @db.Uuid
+  fromId    String           @db.Uuid // payer
+  toId      String           @db.Uuid // payee
+  amount    Int // minor units
+  currency  String           @default("INR")
+  status    SettlementStatus @default(COMPLETED)
+  groupId   String?          @db.Uuid
+  note      String?
+
+  idempotencyKey String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  from User @relation("SettlementFrom", fields: [fromId], references: [id])
+  to   User @relation("SettlementTo", fields: [toId], references: [id])
+
+  @@map("settlements")
+}
+
+// ---------------------------------------------------------------------------
+// My Finances (personal, non-shared)
+// ---------------------------------------------------------------------------
+
+model Income {
+  id     String   @id @default(uuid()) @db.Uuid
+  userId String   @db.Uuid
+  amount Int
+  type   String // Salary | Cash | Pocket Money | Bonus | Freelance | Refund | Other
+  date   DateTime @default(now())
+  note   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("income")
+}
+
+model PersonalExpense {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  amount      Int
+  description String
+  category    String?
+  date        DateTime @default(now())
+  note        String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("personal_expenses")
+}
+
+// ---------------------------------------------------------------------------
+// Activity / Audit, Notifications, Devices
+// ---------------------------------------------------------------------------
+
+model Activity {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  type      String // EXPENSE_CREATED, SETTLEMENT_COMPLETED, etc.
+  entityType String?
+  entityId  String?
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("activity")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  title     String
+  body      String
+  type      String
+  data      Json     @default("{}")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model DeviceToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  platform  String // ios | android
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("device_tokens")
+}
+
+// ---------------------------------------------------------------------------
+// Config / CMS
+// ---------------------------------------------------------------------------
+
+model Category {
+  id       String  @id @default(uuid()) @db.Uuid
+  name     String
+  icon     String?
+  isSystem Boolean @default(true)
+  ownerId  String? @db.Uuid // null = system category
+
+  @@map("categories")
+}
+
+model PromotionalBanner {
+  id           String    @id @default(uuid()) @db.Uuid
+  title        String
+  subtitle     String?
+  image        String?
+  cta          String?
+  destination  String?
+  targetScreen String
+  startDate    DateTime
+  endDate      DateTime
+  priority     Int       @default(0)
+  status       String    @default("Draft") // Draft | Active | Inactive | Expired
+
+  @@map("promotional_banners")
+}

@@ -61,6 +61,19 @@ model UserPreferences {
   @@map("user_preferences")
 }
 
+model OtpChallenge {
+  id        String   @id @default(uuid()) @db.Uuid
+  phone     String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@map("otp_challenges")
+}
+
 // ---------------------------------------------------------------------------
 // People & Relationships
 // ---------------------------------------------------------------------------

@@ -4,10 +4,9 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { createHash, randomBytes } from 'crypto';
+import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { OtpService } from './otp.service';
 import { TokenService } from './token.service';
 import { EmailService } from './email.service';
 import {
@@ -15,13 +14,9 @@ import {
   LoginDto,
   RegisterDto,
   ResetPasswordDto,
-  SendOtpDto,
   VerifyEmailDto,
-  VerifyOtpDto,
 } from './dto/auth.dto';
 
-const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const MAX_ATTEMPTS = 5;
 const BCRYPT_ROUNDS = 12;
 const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -29,14 +24,9 @@ const TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly otp: OtpService,
     private readonly tokens: TokenService,
     private readonly email: EmailService,
   ) {}
-
-  // -------------------------------------------------------------------------
-  // Password-based auth (DEFAULT)
-  // -------------------------------------------------------------------------
 
   async register(dto: RegisterDto) {
     const existing = await this.prisma.user.findUnique({
@@ -69,7 +59,6 @@ export class AuthService {
     return {
       message: 'Registration successful. Please check your email to verify your account.',
       user: this.publicUser(user),
-      // Expose token in dev/mock so the flow can be tested without real email
       ...(this.email.isMock() ? { devVerifyToken: emailVerifyToken } : {}),
     };
   }
@@ -131,7 +120,6 @@ export class AuthService {
       where: { email: email.toLowerCase() },
     });
     if (!user) {
-      // Don't reveal whether account exists
       return { message: 'If the email is registered, a verification link has been sent.' };
     }
     if (user.emailVerified) {
@@ -158,7 +146,6 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email.toLowerCase() },
     });
-    // Always return success to prevent email enumeration
     const successMsg = 'If the email is registered, a password reset link has been sent.';
     if (!user || !user.passwordHash) {
       return { message: successMsg };
@@ -204,104 +191,8 @@ export class AuthService {
     return { message: 'Password reset successfully. You can now log in.' };
   }
 
-  // -------------------------------------------------------------------------
-  // OTP-based auth (OPTIONAL / secondary)
-  // -------------------------------------------------------------------------
-
-  private hash(code: string): string {
-    return createHash('sha256').update(code).digest('hex');
-  }
-
-  async sendOtp(dto: SendOtpDto) {
-    const code = this.otp.generateCode();
-    await this.prisma.otpChallenge.updateMany({
-      where: { phone: dto.phone, consumed: false },
-      data: { consumed: true },
-    });
-    await this.prisma.otpChallenge.create({
-      data: {
-        phone: dto.phone,
-        codeHash: this.hash(code),
-        expiresAt: new Date(Date.now() + OTP_TTL_MS),
-      },
-    });
-    await this.otp.deliver(dto.phone, code);
-    return {
-      sent: true,
-      phone: dto.phone,
-      devCode: this.otp.isMock() ? code : undefined,
-    };
-  }
-
-  async resendOtp(dto: SendOtpDto) {
-    return this.sendOtp(dto);
-  }
-
-  async verifyOtp(dto: VerifyOtpDto) {
-    const challenge = await this.prisma.otpChallenge.findFirst({
-      where: { phone: dto.phone, consumed: false },
-      orderBy: { createdAt: 'desc' },
-    });
-    if (!challenge) {
-      throw new BadRequestException('No active OTP. Request a new code.');
-    }
-    if (challenge.expiresAt < new Date()) {
-      throw new BadRequestException('OTP expired. Request a new code.');
-    }
-    if (challenge.attempts >= MAX_ATTEMPTS) {
-      throw new BadRequestException('Too many attempts. Request a new code.');
-    }
-    if (challenge.codeHash !== this.hash(dto.code)) {
-      await this.prisma.otpChallenge.update({
-        where: { id: challenge.id },
-        data: { attempts: { increment: 1 } },
-      });
-      throw new UnauthorizedException('Incorrect code');
-    }
-
-    await this.prisma.otpChallenge.update({
-      where: { id: challenge.id },
-      data: { consumed: true },
-    });
-
-    let user = await this.prisma.user.findFirst({
-      where: { phone: dto.phone },
-    });
-    let isNewUser = false;
-
-    if (!user) {
-      if (!dto.firstName) {
-        throw new BadRequestException(
-          'firstName is required to complete signup',
-        );
-      }
-      user = await this.prisma.user.create({
-        data: {
-          phone: dto.phone,
-          firstName: dto.firstName,
-          lastName: dto.lastName ?? null,
-          isVerified: true,
-          preferences: { create: {} },
-        },
-      });
-      isNewUser = true;
-    } else if (!user.isVerified) {
-      user = await this.prisma.user.update({
-        where: { id: user.id },
-        data: { isVerified: true },
-      });
-    }
-
-    const tokenPair = await this.tokens.issue(user.id, user.phone ?? user.email ?? user.id);
-    return { isNewUser, user: this.publicUser(user), ...tokenPair };
-  }
-
-  // -------------------------------------------------------------------------
-  // Shared
-  // -------------------------------------------------------------------------
-
   async refresh(refreshToken: string) {
-    let payload: { sub: string; phone?: string; identifier?: string };
+    let payload: { sub: string; identifier: string };
     try {
       payload = await this.tokens.verifyRefresh(refreshToken);
     } catch {
@@ -311,7 +202,7 @@ export class AuthService {
       where: { id: payload.sub },
     });
     if (!user) throw new UnauthorizedException('User no longer exists');
-    return this.tokens.issue(user.id, user.email ?? user.phone ?? user.id);
+    return this.tokens.issue(user.id, user.email ?? user.id);
   }
 
   async logout() {

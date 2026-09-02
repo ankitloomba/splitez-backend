@@ -7,9 +7,7 @@ import {
   RefreshDto,
   RegisterDto,
   ResetPasswordDto,
-  SendOtpDto,
   VerifyEmailDto,
-  VerifyOtpDto,
 } from './dto/auth.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
@@ -17,10 +15,6 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
-
-  // -----------------------------------------------------------------------
-  // Password-based auth (DEFAULT)
-  // -----------------------------------------------------------------------
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
@@ -41,7 +35,7 @@ export class AuthController {
 
   @Post('resend-verification')
   @HttpCode(200)
-  resendVerification(@Body() dto: ForgotPasswordDto /* same shape: just email */) {
+  resendVerification(@Body() dto: ForgotPasswordDto) {
     return this.auth.resendVerification(dto.email);
   }
 
@@ -56,32 +50,6 @@ export class AuthController {
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.auth.resetPassword(dto);
   }
-
-  // -----------------------------------------------------------------------
-  // OTP-based auth (OPTIONAL / secondary)
-  // -----------------------------------------------------------------------
-
-  @Post('send-otp')
-  @HttpCode(200)
-  sendOtp(@Body() dto: SendOtpDto) {
-    return this.auth.sendOtp(dto);
-  }
-
-  @Post('resend-otp')
-  @HttpCode(200)
-  resendOtp(@Body() dto: SendOtpDto) {
-    return this.auth.resendOtp(dto);
-  }
-
-  @Post('verify-otp')
-  @HttpCode(200)
-  verifyOtp(@Body() dto: VerifyOtpDto) {
-    return this.auth.verifyOtp(dto);
-  }
-
-  // -----------------------------------------------------------------------
-  // Shared
-  // -----------------------------------------------------------------------
 
   @Post('refresh')
   @HttpCode(200)

@@ -37,7 +37,8 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
-    const emailVerifyToken = randomBytes(32).toString('hex');
+    const autoVerify = this.email.isMock();
+    const emailVerifyToken = autoVerify ? null : randomBytes(32).toString('hex');
 
     const user = await this.prisma.user.create({
       data: {
@@ -46,20 +47,31 @@ export class AuthService {
         firstName: dto.firstName,
         lastName: dto.lastName ?? null,
         phone: dto.phone ?? null,
-        isVerified: false,
-        emailVerified: false,
+        isVerified: autoVerify,
+        emailVerified: autoVerify,
         emailVerifyToken,
-        emailVerifyExpiry: new Date(Date.now() + TOKEN_TTL_MS),
+        emailVerifyExpiry: emailVerifyToken
+          ? new Date(Date.now() + TOKEN_TTL_MS)
+          : null,
         preferences: { create: {} },
       },
     });
 
-    await this.email.sendVerificationEmail(user.email!, emailVerifyToken);
+    // When email is mock (no real provider), auto-verify and return tokens
+    // so mobile clients can log in immediately after registration.
+    if (autoVerify) {
+      const tokenPair = await this.tokens.issue(user.id, user.email!);
+      return {
+        user: this.publicUser(user),
+        ...tokenPair,
+      };
+    }
+
+    await this.email.sendVerificationEmail(user.email!, emailVerifyToken!);
 
     return {
       message: 'Registration successful. Please check your email to verify your account.',
       user: this.publicUser(user),
-      ...(this.email.isMock() ? { devVerifyToken: emailVerifyToken } : {}),
     };
   }
 

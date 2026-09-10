@@ -20,6 +20,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AdsModule } from './modules/ads/ads.module';
 import { ExportsModule } from './modules/exports/exports.module';
+import { ImportsModule } from './modules/imports/imports.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -48,6 +49,7 @@ import appConfig from './config/app.config';
     AnalyticsModule,
     AdsModule,
     ExportsModule,
+    ImportsModule,
   ],
 })
 export class AppModule {}

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>SplitEZ Admin</title>
+    <link rel="stylesheet" href="admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+    <script src="admin.js" defer></script>
+  </head>
+  <body>
+    <!-- Login -->
+    <div id="login" class="login-wrap" hidden>
+      <form id="login-form" class="login-card">
+        <div class="brand">Split<span>EZ</span> Admin</div>
+        <p class="muted">Sign in with admin credentials</p>
+        <label>Username<input name="username" autocomplete="username" required /></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" required /></label>
+        <button type="submit">Sign in</button>
+        <div id="login-error" class="error" hidden></div>
+      </form>
+    </div>
+
+    <!-- App shell -->
+    <div id="app" class="shell" hidden>
+      <aside class="sidebar">
+        <div class="brand">Split<span>EZ</span> Admin</div>
+        <nav id="nav">
+          <button data-view="overview" class="active">Overview</button>
+          <button data-view="analytics">Analytics</button>
+          <button data-view="users">Users</button>
+          <div class="nav-group">Content</div>
+          <button data-view="banners">Banners</button>
+          <button data-view="elements">Dashboard Elements</button>
+          <button data-view="ads">Ad Placements</button>
+        </nav>
+        <div class="sidebar-foot">
+          <button id="theme-toggle" class="ghost">Toggle theme</button>
+          <button id="logout" class="ghost">Log out</button>
+        </div>
+      </aside>
+
+      <main class="content">
+        <header class="topbar">
+          <h1 id="view-title">Overview</h1>
+          <span class="env-pill">production</span>
+        </header>
+        <section id="view" class="view"></section>
+      </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal-wrap" hidden>
+      <div class="modal">
+        <header><h2 id="modal-title"></h2><button id="modal-close" class="ghost">✕</button></header>
+        <form id="modal-form"></form>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" hidden></div>
+  </body>
+</html>

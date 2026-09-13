@@ -1,8 +1,11 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { HealthTrackingService } from './health.service';
+import { AdminGuard } from '../../common/guards/admin.guard';
 
 @ApiTags('Admin – Service Health')
+@ApiBearerAuth()
+@UseGuards(AdminGuard)
 @Controller('admin/health')
 export class HealthAdminController {
   constructor(private readonly health: HealthTrackingService) {}

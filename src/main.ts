@@ -30,9 +30,13 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup(`${prefix}/docs`, app, document);
 
-  // Seed default categories
-  const categoriesService = app.get(CategoriesService);
-  await categoriesService.seedDefaults();
+  // Seed default categories (non-fatal — don't block startup)
+  try {
+    const categoriesService = app.get(CategoriesService);
+    await categoriesService.seedDefaults();
+  } catch (err) {
+    console.warn('[SplitEZ] Category seeding failed (non-fatal):', err.message);
+  }
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port, '0.0.0.0');

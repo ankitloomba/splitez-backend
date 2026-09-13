@@ -38,4 +38,7 @@ async function bootstrap() {
   // eslint-disable-next-line no-console
   console.log(`SplitEZ backend running on port ${port} (prefix: /${prefix})`);
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('Bootstrap failed:', err);
+  process.exit(1);
+});

@@ -6,7 +6,8 @@ import { AppModule } from './app.module';
 import { CategoriesService } from './modules/categories/categories.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  console.log('[SplitEZ] Starting bootstrap...');
+  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] });
 
   const prefix = process.env.API_PREFIX ?? 'api/v1';
   app.setGlobalPrefix(prefix);

@@ -8,21 +8,21 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @ApiTags('users')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
-@Controller('me')
+@Controller('users')
 export class UsersController {
   constructor(private readonly users: UsersService) {}
 
-  @Get()
+  @Get('me')
   me(@CurrentUser('id') userId: string) {
     return this.users.me(userId);
   }
 
-  @Put()
+  @Put('me')
   updateMe(@CurrentUser('id') userId: string, @Body() dto: UpdateMeDto) {
     return this.users.updateMe(userId, dto);
   }
 
-  @Post('profile-picture')
+  @Post('me/profile-picture')
   @ApiBody({ schema: { properties: { url: { type: 'string' } } } })
   setProfilePicture(
     @CurrentUser('id') userId: string,
@@ -31,12 +31,12 @@ export class UsersController {
     return this.users.setProfilePicture(userId, url);
   }
 
-  @Get('preferences')
+  @Get('me/preferences')
   getPreferences(@CurrentUser('id') userId: string) {
     return this.users.getPreferences(userId);
   }
 
-  @Put('preferences')
+  @Put('me/preferences')
   updatePreferences(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdatePreferencesDto,

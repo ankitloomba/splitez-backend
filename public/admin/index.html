@@ -13,6 +13,13 @@
     <!-- Login -->
     <div id="login" class="login-wrap" hidden>
       <div class="login-header">
+        <svg class="split-logo" width="56" height="56" viewBox="0 0 56 56">
+          <clipPath id="c"><circle cx="28" cy="28" r="28"/></clipPath>
+          <g clip-path="url(#c)">
+            <path d="M0 0 L27 0 L27 56 L0 56Z" fill="#818CF8"/>
+            <path d="M29 0 L56 0 L56 56 L29 56Z" fill="#4338CA"/>
+          </g>
+        </svg>
         <div class="brand">Split<span>EZ</span></div>
         <p>Admin Dashboard</p>
       </div>
@@ -29,7 +36,16 @@
     <!-- App shell -->
     <div id="app" class="shell" hidden>
       <aside class="sidebar">
-        <div class="brand">Split<span>EZ</span> Admin</div>
+        <div class="brand" style="display:flex;align-items:center;gap:10px;">
+          <svg width="28" height="28" viewBox="0 0 56 56">
+            <clipPath id="sc"><circle cx="28" cy="28" r="28"/></clipPath>
+            <g clip-path="url(#sc)">
+              <path d="M0 0 L27 0 L27 56 L0 56Z" fill="#818CF8"/>
+              <path d="M29 0 L56 0 L56 56 L29 56Z" fill="#4338CA"/>
+            </g>
+          </svg>
+          Split<span>EZ</span>
+        </div>
         <nav id="nav">
           <button data-view="overview" class="active">Overview</button>
           <button data-view="analytics">Analytics</button>

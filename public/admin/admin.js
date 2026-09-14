@@ -139,7 +139,7 @@
       text: s.getPropertyValue('--muted').trim(),
     };
   }
-  const PALETTE = ['#3890f5', '#2fa66b', '#f5a623', '#9b6cf5', '#e5484d', '#12b5b0'];
+  const PALETTE = ['#4338CA', '#818CF8', '#2EC770', '#F5A623', '#EB5757', '#12b5b0'];
 
   function lineChart(canvas, labels, data, label) {
     const c = themeColors();

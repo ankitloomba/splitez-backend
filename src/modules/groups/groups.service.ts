@@ -146,6 +146,7 @@ export class GroupsService {
     name: string;
     description: string | null;
     image: string | null;
+    createdAt: Date;
     members: {
       userId: string;
       role: string;
@@ -163,6 +164,7 @@ export class GroupsService {
       description: group.description,
       image: group.image,
       memberCount: group.members.length,
+      createdAt: group.createdAt.toISOString(),
       members: group.members.map((m) => ({
         id: m.user.id,
         firstName: m.user.firstName,

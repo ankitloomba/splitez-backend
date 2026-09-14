@@ -14,12 +14,23 @@ export class BalancesController {
   @Get()
   @ApiQuery({ name: 'groupId', required: false })
   @ApiQuery({ name: 'tripId', required: false })
-  getBalances(
+  async getBalances(
     @CurrentUser('id') userId: string,
     @Query('groupId') groupId?: string,
     @Query('tripId') tripId?: string,
   ) {
-    return this.balances.getBalances(userId, { groupId, tripId });
+    const entries = await this.balances.getBalances(userId, { groupId, tripId });
+    return entries.map((e) => ({
+      userId: e.userId,
+      user: {
+        id: e.userId,
+        firstName: e.firstName,
+        lastName: e.lastName,
+        profilePicture: e.profilePicture,
+        avatar: e.avatar,
+      },
+      amount: e.netAmount,
+    }));
   }
 
   @Get('simplified')

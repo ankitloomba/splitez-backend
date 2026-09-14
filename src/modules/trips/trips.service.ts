@@ -94,6 +94,7 @@ export class TripsService {
     startDate: Date | null;
     endDate: Date | null;
     image: string | null;
+    createdAt: Date;
     members: {
       userId: string;
       user: {
@@ -111,6 +112,7 @@ export class TripsService {
       startDate: trip.startDate,
       endDate: trip.endDate,
       image: trip.image,
+      createdAt: trip.createdAt.toISOString(),
       memberCount: trip.members.length,
       members: trip.members.map((m) => ({
         id: m.user.id,

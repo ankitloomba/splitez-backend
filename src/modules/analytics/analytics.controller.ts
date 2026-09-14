@@ -5,17 +5,19 @@ import {
   Body,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AnalyticsService } from './analytics.service';
 import { TrackEventDto, TrackBatchDto, RegisterInstallDto } from './dto/analytics.dto';
+import { AdminGuard } from '../../common/guards/admin.guard';
 
 @ApiTags('Analytics')
 @Controller('analytics')
 export class AnalyticsController {
   constructor(private readonly analytics: AnalyticsService) {}
 
-  // ── Client-facing: track events ──────────────────────────────────────
+  // ── Client-facing: track events (public) ─────────────────────────────
 
   @Post('events')
   @ApiOperation({ summary: 'Track a single analytics event' })
@@ -31,7 +33,20 @@ export class AnalyticsController {
     return this.analytics.trackBatch(userId, dto.events);
   }
 
-  // ── Admin: metrics ───────────────────────────────────────────────────
+  @Post('installs')
+  @ApiOperation({ summary: 'Register or update an app install' })
+  registerInstall(@Req() req: any, @Body() dto: RegisterInstallDto) {
+    const userId = req.user?.sub ?? undefined;
+    return this.analytics.registerInstall(dto, userId);
+  }
+}
+
+@ApiTags('Admin – Analytics')
+@ApiBearerAuth()
+@UseGuards(AdminGuard)
+@Controller('analytics')
+export class AnalyticsAdminController {
+  constructor(private readonly analytics: AnalyticsService) {}
 
   @Get('dau')
   @ApiOperation({ summary: 'Daily active users (last N days)' })
@@ -82,15 +97,6 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Platform breakdown (iOS/Android/Web)' })
   getPlatformBreakdown(@Query('days') days?: string) {
     return this.analytics.getPlatformBreakdown(days ? parseInt(days, 10) : 30);
-  }
-
-  // ── App Installs ─────────────────────────────────────────────────────
-
-  @Post('installs')
-  @ApiOperation({ summary: 'Register or update an app install' })
-  registerInstall(@Req() req: any, @Body() dto: RegisterInstallDto) {
-    const userId = req.user?.sub ?? undefined;
-    return this.analytics.registerInstall(dto, userId);
   }
 
   @Get('installs')

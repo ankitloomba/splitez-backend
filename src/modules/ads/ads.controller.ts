@@ -8,9 +8,11 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdsService } from './ads.service';
+import { AdminGuard } from '../../common/guards/admin.guard';
 
 @ApiTags('Ads')
 @Controller('ads')
@@ -29,6 +31,8 @@ export class AdsController {
 }
 
 @ApiTags('Admin – Ads')
+@ApiBearerAuth()
+@UseGuards(AdminGuard)
 @Controller('admin/ads')
 export class AdsAdminController {
   constructor(private readonly ads: AdsService) {}

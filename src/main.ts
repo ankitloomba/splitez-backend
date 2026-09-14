@@ -1,18 +1,34 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { join } from 'path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { CategoriesService } from './modules/categories/categories.service';
 
 async function bootstrap() {
   console.log('[SplitEZ] Starting bootstrap...');
-  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: ['error', 'warn', 'log'],
+  });
 
   const prefix = process.env.API_PREFIX ?? 'api/v1';
   app.setGlobalPrefix(prefix);
-  app.use(helmet());
+  // Allow CDN-hosted scripts (Chart.js) for the admin panel while keeping
+  // Helmet's other protections.
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
   app.enableCors();
+
+  // Static admin panel served at /admin (outside the API prefix).
+  app.useStaticAssets(join(__dirname, '..', 'public', 'admin'), {
+    prefix: '/admin',
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

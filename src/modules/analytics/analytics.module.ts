@@ -1,12 +1,19 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { AnalyticsController } from './analytics.controller';
+import {
+  AnalyticsController,
+  AnalyticsAdminController,
+} from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
 import { HealthAdminController } from './health-admin.controller';
 import { HealthTrackingService } from './health.service';
 import { HealthTrackingMiddleware } from './health.middleware';
 
 @Module({
-  controllers: [AnalyticsController, HealthAdminController],
+  controllers: [
+    AnalyticsController,
+    AnalyticsAdminController,
+    HealthAdminController,
+  ],
   providers: [AnalyticsService, HealthTrackingService],
   exports: [HealthTrackingService],
 })

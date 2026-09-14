@@ -81,6 +81,7 @@ export class UsersService {
     profilePicture: string | null;
     isVerified: boolean;
     adFree: boolean;
+    createdAt: Date;
     preferences: unknown;
   }) {
     return {
@@ -93,6 +94,7 @@ export class UsersService {
       profilePicture: user.profilePicture,
       isVerified: user.isVerified,
       adFree: user.adFree,
+      createdAt: user.createdAt.toISOString(),
       // Deterministic fallback avatar until a photo is uploaded (§9)
       avatar: user.profilePicture
         ? null

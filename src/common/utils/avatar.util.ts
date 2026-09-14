@@ -32,6 +32,6 @@ export function initialAvatar(
 ) {
   return {
     initials: initials(firstName, lastName),
-    color: avatarColor(seed),
+    backgroundColor: avatarColor(seed),
   };
 }

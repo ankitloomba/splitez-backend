@@ -21,6 +21,6 @@ describe('avatar.util', () => {
   it('returns a full avatar descriptor', () => {
     const a = initialAvatar('seed-1', 'Ankit', 'Loomba');
     expect(a.initials).toBe('AL');
-    expect(a.color).toMatch(/^#[0-9A-F]{6}$/i);
+    expect(a.backgroundColor).toMatch(/^#[0-9A-F]{6}$/i);
   });
 });

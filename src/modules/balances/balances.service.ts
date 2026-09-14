@@ -7,7 +7,7 @@ export interface BalanceEntry {
   firstName: string;
   lastName: string | null;
   profilePicture: string | null;
-  avatar: { initials: string; color: string } | null;
+  avatar: { initials: string; backgroundColor: string } | null;
   /** Positive = they owe you, negative = you owe them */
   netAmount: number;
   currency: string;

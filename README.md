@@ -55,3 +55,4 @@ then starts the API. Set the JWT secrets and OTP config as Railway variables.
 ## Data model
 
 See `prisma/schema.prisma` — models the full V1 entity set from Blueprint §30.
+

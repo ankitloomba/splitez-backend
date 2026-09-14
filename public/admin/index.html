@@ -12,9 +12,13 @@
   <body>
     <!-- Login -->
     <div id="login" class="login-wrap" hidden>
+      <div class="login-header">
+        <div class="brand">Split<span>EZ</span></div>
+        <p>Admin Dashboard</p>
+      </div>
       <form id="login-form" class="login-card">
-        <div class="brand">Split<span>EZ</span> Admin</div>
-        <p class="muted">Sign in with admin credentials</p>
+        <h2 style="margin:0 0 4px;font-size:17px;">Sign in</h2>
+        <p class="muted" style="margin:0 0 16px;font-size:13px;">Enter your admin credentials to continue</p>
         <label>Username<input name="username" autocomplete="username" required /></label>
         <label>Password<input name="password" type="password" autocomplete="current-password" required /></label>
         <button type="submit">Sign in</button>
@@ -34,6 +38,8 @@
           <button data-view="banners">Banners</button>
           <button data-view="elements">Dashboard Elements</button>
           <button data-view="ads">Ad Placements</button>
+          <div class="nav-group">Legal &amp; Info</div>
+          <button data-view="pages">Content Pages</button>
         </nav>
         <div class="sidebar-foot">
           <button id="theme-toggle" class="ghost">Toggle theme</button>

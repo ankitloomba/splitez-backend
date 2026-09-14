@@ -105,6 +105,7 @@
   const TITLES = {
     overview: 'Overview', analytics: 'Analytics', users: 'Users',
     banners: 'Promotional Banners', elements: 'Dashboard Elements', ads: 'Ad Placements',
+    pages: 'Content Pages',
   };
   let currentView = null;
 
@@ -326,10 +327,12 @@
       const delBtn = el('button', { className: 'btn danger small' }, 'Delete');
       editBtn.addEventListener('click', () => openForm(cfg, it));
       delBtn.addEventListener('click', async () => {
-        if (!confirm(`Delete this ${cfg.name.toLowerCase()}?`)) return;
-        await api(`${cfg.base}/${it.id}`, { method: 'DELETE' });
-        toast(cfg.name + ' deleted');
-        navigate(currentView);
+        if (!(await confirmAction(`Delete this ${cfg.name.toLowerCase()}?`))) return;
+        try {
+          await api(`${cfg.base}/${it.id}`, { method: 'DELETE' });
+          toast(cfg.name + ' deleted');
+          navigate(currentView);
+        } catch (err) { toast('Error: ' + err.message); }
       });
       return cells.concat([el('div', { className: 'row-actions' }, [editBtn, delBtn])]);
     });
@@ -361,7 +364,7 @@
         if (v === '' && !f.required) continue;
         if (f.type === 'number') v = Number(v);
         else if (f.type === 'checkbox') v = form.elements[f.key].checked;
-        else if (f.type === 'json') { try { v = JSON.parse(v || '{}'); } catch { alert('Invalid JSON in ' + f.label); return; } }
+        else if (f.type === 'json') { try { v = JSON.parse(v || '{}'); } catch { toast('Invalid JSON in ' + f.label); return; } }
         else if (f.type === 'datetime') v = new Date(v).toISOString();
         body[f.key] = v;
       }
@@ -371,7 +374,7 @@
         toast(cfg.name + (item ? ' updated' : ' created'));
         closeModal();
         navigate(currentView);
-      } catch (err) { alert(err.message); }
+      } catch (err) { toast('Error: ' + err.message); }
     };
     $('#modal').hidden = false;
   }
@@ -401,6 +404,23 @@
   function closeModal() { $('#modal').hidden = true; $('#modal-form').innerHTML = ''; }
   $('#modal-close').addEventListener('click', closeModal);
   $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
+
+  // Custom confirm dialog (replaces native confirm to avoid browser pop-ups)
+  function confirmAction(msg) {
+    return new Promise((resolve) => {
+      const wrap = el('div', { className: 'confirm-wrap' });
+      const yes = el('button', { className: 'btn danger' }, 'Delete');
+      const no = el('button', { className: 'btn secondary' }, 'Cancel');
+      wrap.append(el('div', { className: 'confirm-box' }, [
+        el('p', {}, msg), el('div', { className: 'actions' }, [no, yes]),
+      ]));
+      const close = (v) => { wrap.remove(); resolve(v); };
+      yes.addEventListener('click', () => close(true));
+      no.addEventListener('click', () => close(false));
+      wrap.addEventListener('click', (e) => { if (e.target === wrap) close(false); });
+      document.body.append(wrap);
+    });
+  }
 
   // ── Small DOM builders ─────────────────────────────────────────────
   function tag(cls, text) {
@@ -463,6 +483,26 @@
     { key: 'enabled', label: 'Enabled', type: 'checkbox', default: true },
     { key: 'adFreeSkip', label: 'Skip for ad-free users', type: 'checkbox', default: true },
   ];
+
+  var PAGE_FIELDS = [
+    { key: 'slug', label: 'Slug (URL key)', required: true },
+    { key: 'title', label: 'Title', required: true },
+    { key: 'body', label: 'Body (markdown / HTML)', type: 'textarea' },
+    { key: 'category', label: 'Category', type: 'select', options: ['legal', 'info', 'support'], default: 'legal' },
+    { key: 'published', label: 'Published', type: 'checkbox', default: false },
+    { key: 'sortOrder', label: 'Sort order', type: 'number', default: 0 },
+    { key: 'metaTitle', label: 'Meta title' },
+    { key: 'metaDesc', label: 'Meta description' },
+  ];
+
+  VIEWS.pages = (host) => crud(host, {
+    list: '/admin/content-pages', base: '/admin/content-pages', name: 'Content Page',
+    columns: ['Title', 'Slug', 'Category', 'Published', 'Updated'],
+    row: (p) => [esc(p.title), esc(p.slug), esc(p.category),
+      tag(p.published ? 'Active' : 'Draft', p.published ? 'Yes' : 'No'),
+      date(p.updatedAt)],
+    fields: PAGE_FIELDS,
+  });
 
   // ── Boot ────────────────────────────────────────────────────────────
   try { applyTheme(localStorage.getItem(THEME_KEY) || 'light'); } catch {}

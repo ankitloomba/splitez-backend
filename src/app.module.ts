@@ -19,6 +19,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AdsModule } from './modules/ads/ads.module';
+import { ContentPagesModule } from './modules/content-pages/content-pages.module';
 import { ExportsModule } from './modules/exports/exports.module';
 import { ImportsModule } from './modules/imports/imports.module';
 import appConfig from './config/app.config';
@@ -48,6 +49,7 @@ import appConfig from './config/app.config';
     DashboardModule,
     AnalyticsModule,
     AdsModule,
+    ContentPagesModule,
     ExportsModule,
     ImportsModule,
   ],

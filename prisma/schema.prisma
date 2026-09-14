@@ -435,6 +435,28 @@ model AppInstall {
 }
 
 // ---------------------------------------------------------------------------
+// Content Pages — privacy, terms, contact, about, etc.
+// ---------------------------------------------------------------------------
+
+model ContentPage {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique // e.g. "privacy-policy", "terms", "contact-us"
+  title       String
+  body        String   @db.Text // markdown or HTML content
+  category    String   @default("legal") // legal | info | support
+  published   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  metaTitle   String?  // SEO / in-app title override
+  metaDesc    String?  // SEO description
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug, published])
+  @@index([category, published])
+  @@map("content_pages")
+}
+
+// ---------------------------------------------------------------------------
 // Ad Placements — server-driven ad configuration
 // ---------------------------------------------------------------------------
 

@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsDateString,
   IsIn,
   IsInt,
@@ -9,6 +10,20 @@ import {
   IsString,
   Min,
 } from 'class-validator';
+
+// ── Admin User Management ───────────────────────────────────────────────
+
+export class AdminUpdateUserDto {
+  @IsOptional() @IsString() firstName?: string;
+  @IsOptional() @IsString() lastName?: string;
+  @IsOptional() @IsString() email?: string;
+  @IsOptional() @IsString() phone?: string;
+  @IsOptional() @IsString() countryCode?: string;
+  @IsOptional() @IsString() currency?: string;
+  @IsOptional() @IsBoolean() isVerified?: boolean;
+  @IsOptional() @IsBoolean() emailVerified?: boolean;
+  @IsOptional() @IsBoolean() adFree?: boolean;
+}
 
 // ── Promotional Banners ─────────────────────────────────────────────────
 

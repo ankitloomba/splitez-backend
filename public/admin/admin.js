@@ -253,6 +253,18 @@
     function empty(cv) { cv.replaceWith(el('div', { className: 'loading' }, 'No data yet')); }
   };
 
+  var USER_FIELDS = [
+    { key: 'firstName', label: 'First name', required: true },
+    { key: 'lastName', label: 'Last name' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'countryCode', label: 'Country code' },
+    { key: 'currency', label: 'Currency', type: 'select', options: ['INR', 'USD', 'EUR', 'GBP', 'AUD', 'CAD'], default: 'INR' },
+    { key: 'isVerified', label: 'Verified', type: 'checkbox', default: false },
+    { key: 'emailVerified', label: 'Email verified', type: 'checkbox', default: false },
+    { key: 'adFree', label: 'Ad-free', type: 'checkbox', default: false },
+  ];
+
   VIEWS.users = async (host) => {
     let page = 1, search = '';
     const render = async () => {
@@ -260,22 +272,37 @@
       const data = await api('/admin/users' + q);
       host.innerHTML = '';
       const input = el('input', { placeholder: 'Search name, email, phone…', value: search });
-      const btn = el('button', { className: 'btn' }, 'Search');
-      const form = el('form', { className: 'toolbar' }, [input, btn,
+      const searchBtn = el('button', { className: 'btn' }, 'Search');
+      const form = el('form', { className: 'toolbar' }, [input, searchBtn,
         el('span', { className: 'muted' }, `${fmt(data.total)} users`)]);
       form.addEventListener('submit', (e) => { e.preventDefault(); search = input.value; page = 1; render(); });
       host.append(form);
 
-      host.append(table(
-        ['Name', 'Email', 'Phone', 'Verified', 'Ad-free', 'Joined'],
-        data.users.map((u) => [
+      const rows = data.users.map((u) => {
+        const editBtn = el('button', { className: 'btn secondary small' }, 'Edit');
+        const delBtn = el('button', { className: 'btn danger small' }, 'Delete');
+        editBtn.addEventListener('click', () => openUserForm(u, render));
+        delBtn.addEventListener('click', async () => {
+          if (!(await confirmAction('Delete this user and ALL their data? This cannot be undone.'))) return;
+          try {
+            await api(`/admin/users/${u.id}`, { method: 'DELETE' });
+            toast('User deleted');
+            render();
+          } catch (err) { toast('Error: ' + err.message); }
+        });
+        return [
           esc([u.firstName, u.lastName].filter(Boolean).join(' ')) || '—',
           esc(u.email) || '—',
           u.phone ? esc(u.countryCode + ' ' + u.phone) : '—',
           tag(u.isVerified ? 'Active' : 'Inactive', u.isVerified ? 'Yes' : 'No'),
           tag(u.adFree ? 'Active' : 'Inactive', u.adFree ? 'Yes' : 'No'),
           date(u.createdAt),
-        ]), true));
+          el('div', { className: 'row-actions' }, [editBtn, delBtn]),
+        ];
+      });
+      host.append(table(
+        ['Name', 'Email', 'Phone', 'Verified', 'Ad-free', 'Joined', ''],
+        rows, true));
 
       const prev = el('button', { className: 'btn secondary small', disabled: page <= 1 }, 'Prev');
       const next = el('button', { className: 'btn secondary small', disabled: page >= data.pageCount }, 'Next');
@@ -286,6 +313,39 @@
     };
     await render();
   };
+
+  function openUserForm(user, onDone) {
+    const form = $('#modal-form');
+    $('#modal-title').textContent = 'Edit User';
+    form.innerHTML = '';
+    const grid = el('div', { className: 'grid-2' });
+    for (const f of USER_FIELDS) {
+      grid.append(fieldControl(f, user[f.key]));
+    }
+    form.append(grid);
+    const cancel = el('button', { type: 'button', className: 'btn secondary' }, 'Cancel');
+    cancel.addEventListener('click', closeModal);
+    form.append(el('div', { className: 'actions' }, [cancel,
+      el('button', { type: 'submit', className: 'btn' }, 'Save')]));
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const body = {};
+      for (const f of USER_FIELDS) {
+        let v = form.elements[f.key].value;
+        if (f.type === 'checkbox') { body[f.key] = form.elements[f.key].checked; continue; }
+        if (v === '' && !f.required) continue;
+        body[f.key] = v;
+      }
+      try {
+        await api(`/admin/users/${user.id}`, { method: 'PUT', body: JSON.stringify(body) });
+        toast('User updated');
+        closeModal();
+        onDone();
+      } catch (err) { toast('Error: ' + err.message); }
+    };
+    $('#modal').hidden = false;
+  }
 
   // ── CMS views (full CRUD) ───────────────────────────────────────────
   VIEWS.banners = (host) => crud(host, {

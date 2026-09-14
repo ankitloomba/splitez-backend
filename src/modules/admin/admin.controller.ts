@@ -14,6 +14,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { AdminGuard } from '../../common/guards/admin.guard';
 import {
+  AdminUpdateUserDto,
   CreateBannerDto,
   UpdateBannerDto,
   CreateDashboardElementDto,
@@ -53,6 +54,21 @@ export class AdminController {
   @ApiOperation({ summary: 'Get a user by ID (with activity counts)' })
   getUser(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.getUser(id);
+  }
+
+  @Put('users/:id')
+  @ApiOperation({ summary: 'Update a user (admin)' })
+  updateUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AdminUpdateUserDto,
+  ) {
+    return this.adminService.updateUser(id, dto);
+  }
+
+  @Delete('users/:id')
+  @ApiOperation({ summary: 'Delete a user and all related data' })
+  deleteUser(@Param('id', ParseUUIDPipe) id: string) {
+    return this.adminService.deleteUser(id);
   }
 
   // ── Banners ──────────────────────────────────────────────────────────

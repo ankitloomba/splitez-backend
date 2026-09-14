@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
+  AdminUpdateUserDto,
   CreateBannerDto,
   UpdateBannerDto,
   CreateDashboardElementDto,
@@ -140,6 +141,43 @@ export class AdminService {
     });
     if (!user) throw new NotFoundException('User not found');
     return user;
+  }
+
+  /** Admin update user profile/flags. */
+  async updateUser(id: string, dto: AdminUpdateUserDto) {
+    await this.getUser(id); // ensure exists
+    return this.prisma.user.update({
+      where: { id },
+      data: dto,
+      select: {
+        id: true, firstName: true, lastName: true, email: true,
+        phone: true, countryCode: true, currency: true,
+        isVerified: true, emailVerified: true, adFree: true,
+        createdAt: true, updatedAt: true,
+      },
+    });
+  }
+
+  /** Admin delete user and all related data. */
+  async deleteUser(id: string) {
+    await this.getUser(id);
+    // Delete in dependency order
+    await this.prisma.$transaction([
+      this.prisma.deviceToken.deleteMany({ where: { userId: id } }),
+      this.prisma.notification.deleteMany({ where: { userId: id } }),
+      this.prisma.activity.deleteMany({ where: { userId: id } }),
+      this.prisma.expenseSplit.deleteMany({ where: { userId: id } }),
+      this.prisma.settlement.deleteMany({ where: { OR: [{ fromId: id }, { toId: id }] } }),
+      this.prisma.expense.deleteMany({ where: { OR: [{ createdById: id }, { paidById: id }] } }),
+      this.prisma.personalExpense.deleteMany({ where: { userId: id } }),
+      this.prisma.income.deleteMany({ where: { userId: id } }),
+      this.prisma.tripMember.deleteMany({ where: { userId: id } }),
+      this.prisma.groupMember.deleteMany({ where: { userId: id } }),
+      this.prisma.relationship.deleteMany({ where: { OR: [{ ownerId: id }, { peerId: id }] } }),
+      this.prisma.userPreferences.deleteMany({ where: { userId: id } }),
+      this.prisma.user.delete({ where: { id } }),
+    ]);
+    return { deleted: true };
   }
 
   // ── Promotional Banners ─────────────────────────────────────────────

@@ -20,13 +20,17 @@ import {
   CreateDashboardElementDto,
   UpdateDashboardElementDto,
 } from './dto/admin.dto';
+import { SupportService } from '../support/support.service';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
 @UseGuards(AdminGuard)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly supportService: SupportService,
+  ) {}
 
   // ── User base ────────────────────────────────────────────────────────
 
@@ -139,5 +143,30 @@ export class AdminController {
   @ApiOperation({ summary: 'Delete a dashboard element' })
   deleteElement(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminService.deleteElement(id);
+  }
+
+  // ── Enquiries ─────────────────────────────────────────────────────────
+
+  @Get('enquiries')
+  @ApiOperation({ summary: 'List support enquiries' })
+  listEnquiries(
+    @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    return this.supportService.listEnquiries({
+      status,
+      page: page ? parseInt(page, 10) : undefined,
+      pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
+    });
+  }
+
+  @Put('enquiries/:id/status')
+  @ApiOperation({ summary: 'Update enquiry status (open | in_progress | resolved)' })
+  updateEnquiryStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('status') status: string,
+  ) {
+    return this.supportService.updateEnquiryStatus(id, status);
   }
 }

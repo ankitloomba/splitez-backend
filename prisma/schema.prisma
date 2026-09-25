@@ -478,3 +478,20 @@ model AdPlacement {
   @@index([screen, enabled])
   @@map("ad_placements")
 }
+
+model Enquiry {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String?  @db.Uuid
+  name        String
+  email       String
+  phone       String?
+  topic       String   // Feedback | Complaints | Suggestions | General
+  message     String
+  attachments Json     @default("[]") // array of file URLs
+  status      String   @default("open") // open | in_progress | resolved
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@map("enquiries")
+}

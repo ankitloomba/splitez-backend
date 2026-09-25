@@ -22,6 +22,7 @@ import { AdsModule } from './modules/ads/ads.module';
 import { ContentPagesModule } from './modules/content-pages/content-pages.module';
 import { ExportsModule } from './modules/exports/exports.module';
 import { ImportsModule } from './modules/imports/imports.module';
+import { SupportModule } from './modules/support/support.module';
 import appConfig from './config/app.config';
 
 @Module({
@@ -52,6 +53,7 @@ import appConfig from './config/app.config';
     ContentPagesModule,
     ExportsModule,
     ImportsModule,
+    SupportModule,
   ],
 })
 export class AppModule {}
